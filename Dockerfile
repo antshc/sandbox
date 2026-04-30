@@ -18,8 +18,14 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Azure CLI
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+# Install GitHub CLI
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update && apt-get install -y gh \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # Create the agent user with UID/GID 1000 for secure filesystem access.
 # Using UID 1000 ensures --userns=keep-id (Podman) and --user 1000:1000 (Docker)
@@ -36,7 +42,7 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
 # Copy entrypoint and set up workspace/mitmproxy directories with correct ownership
 COPY entrypoint.sh /etc/mitmproxy/entrypoint.sh
 RUN chmod +x /etc/mitmproxy/entrypoint.sh \
-    && mkdir -p /home/${USERNAME}/workspace /var/log/mitmproxy /etc/mitmproxy \
+    && mkdir -p /home/${USERNAME}/workspace /var/log/mitmproxy /etc/mitmproxy/config \
     && chmod -R a+rx /etc/mitmproxy \
     && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} /etc/mitmproxy /var/log/mitmproxy
 

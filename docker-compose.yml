@@ -1,0 +1,9 @@
+services:
+  sandbox:
+    build: .
+    environment:
+      - COPILOT_GITHUB_TOKEN=${COPILOT_GITHUB_TOKEN}
+    volumes:
+      - ./config:/etc/mitmproxy/config:ro
+      - ./logs:/var/log/mitmproxy
+      - ./hello:/home/agent/workspace
