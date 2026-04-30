@@ -11,7 +11,7 @@ docker build -t sandbox .
 ## Run
 
 ```bash
-docker run --rm -it sandbox
+docker run --rm -it -v "$(pwd)/config":/etc/mitmproxy sandbox
 ```
 
 This starts an interactive bash shell inside the container with the mitmproxy firewall active.
@@ -19,13 +19,13 @@ This starts an interactive bash shell inside the container with the mitmproxy fi
 ### Mount a local workspace
 
 ```bash
-docker run --rm -it -v "$(pwd)":/workspace sandbox
+docker run --rm -it -v "$(pwd)/config":/etc/mitmproxy -v "$(pwd)":/workspace sandbox
 ```
 
 ### Run a specific command
 
 ```bash
-docker run --rm sandbox node --version
+docker run --rm -v "$(pwd)/config":/etc/mitmproxy sandbox node --version
 ```
 
 ## Environment setup

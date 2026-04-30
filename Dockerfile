@@ -31,14 +31,11 @@ ENV HTTPS_PROXY=http://127.0.0.1:8080
 ENV ALL_PROXY=http://127.0.0.1:8080
 ENV NO_PROXY=localhost,127.0.0.1
 
-COPY azure_firewall.py /etc/mitmproxy/azure_firewall.py
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-
-RUN chmod +x /usr/local/bin/entrypoint.sh \
+RUN chmod -R a+rx /etc/mitmproxy \
     && chown -R ${USERNAME}:${USERNAME} /workspace /home/${USERNAME} /etc/mitmproxy
 
 USER ${USERNAME}
 WORKDIR /workspace
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/etc/mitmproxy/entrypoint.sh"]
 CMD ["/bin/bash"]

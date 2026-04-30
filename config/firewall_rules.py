@@ -19,6 +19,13 @@ ALLOWED_HOSTS = {
     "raw.githubusercontent.com",
     "api.nuget.org",
     "www.nuget.org",
+    # Copilot CLI
+    "api.githubcopilot.com",
+    "copilot-proxy.githubusercontent.com",
+    "default.exp-tas.com",
+    "registry.npmjs.org",
+    "api.business.githubcopilot.com",
+    "telemetry.business.githubcopilot.com",
 }
 
 ARM_RE = re.compile(
