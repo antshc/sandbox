@@ -33,9 +33,9 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
 # Copy entrypoint and set up workspace/mitmproxy directories with correct ownership
 COPY entrypoint.sh /etc/mitmproxy/entrypoint.sh
 RUN chmod +x /etc/mitmproxy/entrypoint.sh \
-    && mkdir -p /home/${USERNAME}/workspace \
+    && mkdir -p /home/${USERNAME}/workspace /var/log/mitmproxy /etc/mitmproxy \
     && chmod -R a+rx /etc/mitmproxy \
-    && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} /etc/mitmproxy
+    && chown -R ${USERNAME}:${USERNAME} /home/${USERNAME} /etc/mitmproxy /var/log/mitmproxy
 
 ENV HTTP_PROXY=http://127.0.0.1:8080
 ENV HTTPS_PROXY=http://127.0.0.1:8080

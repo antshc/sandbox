@@ -4,9 +4,9 @@ set -euo pipefail
 mitmdump \
   --listen-host 127.0.0.1 \
   --listen-port 8080 \
-  -s /etc/mitmproxy/firewall_rules.py \
+  -s /etc/mitmproxy/firewall.py \
   --set block_global=false \
-  >/tmp/mitmproxy.log 2>&1 &
+  >/var/log/mitmproxy/mitmproxy_$(date +%Y%m%d_%H%M%S).log 2>&1 &
 
 sleep 1
 
