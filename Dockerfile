@@ -20,9 +20,6 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create dedicated mitmproxy user (exempt from iptables redirect rules)
-RUN useradd --system --no-create-home --shell /usr/sbin/nologin _mitmproxy
-
 # Install GitHub CLI
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
@@ -38,19 +35,18 @@ RUN HOME=/tmp/mitmproxy-setup mitmdump --version \
     && HOME=/home/ubuntu mitmdump -q &>/dev/null & sleep 2 && kill $! 2>/dev/null || true \
     && cp /home/ubuntu/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt \
     && update-ca-certificates \
-    && mkdir -p /home/_mitmproxy/.mitmproxy \
-    && cp /home/ubuntu/.mitmproxy/mitmproxy-ca-cert.pem /home/_mitmproxy/.mitmproxy/ \
-    && cp /home/ubuntu/.mitmproxy/mitmproxy-ca.pem /home/_mitmproxy/.mitmproxy/ \
-    && chown -R _mitmproxy:_mitmproxy /home/_mitmproxy
+    && mkdir -p /etc/mitmproxy/certs \
+    && cp /home/ubuntu/.mitmproxy/mitmproxy-ca*.pem /etc/mitmproxy/certs/ \
+    && chmod 755 /etc/mitmproxy/certs \
+    && chmod 644 /etc/mitmproxy/certs/mitmproxy-ca-cert.pem \
+    && chmod 600 /etc/mitmproxy/certs/mitmproxy-ca.pem
 
 # Copy entrypoint and set up workspace/mitmproxy directories with correct ownership
 COPY entrypoint.sh /etc/mitmproxy/entrypoint.sh
 RUN chmod +x /etc/mitmproxy/entrypoint.sh \
     && mkdir -p /home/ubuntu/workspace /var/log/mitmproxy /etc/mitmproxy/config \
     && chmod -R a+rx /etc/mitmproxy \
-    && chown -R ubuntu:ubuntu /home/ubuntu \
-    && chown -R _mitmproxy:_mitmproxy /var/log/mitmproxy \
-    && chown ubuntu:ubuntu /home/ubuntu/.mitmproxy/mitmproxy-ca-cert.pem
+    && chown -R ubuntu:ubuntu /home/ubuntu
 
 ENV HTTP_PROXY=http://127.0.0.1:8080
 ENV HTTPS_PROXY=http://127.0.0.1:8080

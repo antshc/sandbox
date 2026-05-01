@@ -5,7 +5,7 @@ Known security gaps and their remediation status:
 | Status | Severity | Risk | Issue | Fix |
 |--------|----------|------|-------|-----|
 | ☑ | 🔴 Critical | Sudo access | Agent had `NOPASSWD:ALL` sudo, could bypass container restrictions | Removed sudoers entry and sudo package |
-| ☑ | 🔴 Critical | Proxy bypass | Agent can `unset HTTP_PROXY` or kill mitmproxy | iptables NAT REDIRECT forces all traffic through mitmproxy; entrypoint.sh runs as root then drops to ubuntu via gosu |
+| ☑ | 🔴 Critical | Proxy bypass | Agent can `unset HTTP_PROXY` or kill mitmproxy | iptables NAT REDIRECT forces all traffic through mitmproxy; mitmproxy runs as root (unkillable by ubuntu); entrypoint drops to ubuntu via gosu |
 | ☑ | 🟠 High | Non-HTTP traffic | Raw TCP/UDP (SSH, DNS to external) isn't intercepted by mitmproxy | iptables OUTPUT DROP rule blocks all non-loopback traffic from ubuntu user |
 | ☐ | 🟠 High | DNS exfiltration | DNS queries go directly to host resolver, bypassing proxy | Lock DNS to internal resolver only |
 | ☑ | 🟠 High | Network allowlist | All HTTP/HTTPS traffic filtered through mitmproxy firewall rules | Done |

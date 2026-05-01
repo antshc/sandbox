@@ -25,10 +25,11 @@ if [ -z "${COPILOT_GITHUB_TOKEN:-}" ]; then
   exit 1
 fi
 
-# --- Start mitmproxy as _mitmproxy user (exempt from iptables redirect) ---
-HOME=/home/_mitmproxy gosu _mitmproxy mitmdump \
+# --- Start mitmproxy as root (exempt from iptables UID 1000 rules) ---
+mitmdump \
   --listen-host 127.0.0.1 \
   --listen-port "$PROXY_PORT" \
+  --set confdir=/etc/mitmproxy/certs \
   -s /etc/mitmproxy/config/firewall.py \
   --set block_global=false \
   >>/var/log/mitmproxy/mitmproxy_$(date +%Y%m%d).log 2>&1 &
@@ -57,6 +58,6 @@ export HTTP_PROXY=http://127.0.0.1:$PROXY_PORT
 export HTTPS_PROXY=http://127.0.0.1:$PROXY_PORT
 export ALL_PROXY=http://127.0.0.1:$PROXY_PORT
 export NO_PROXY=localhost,127.0.0.1
-export NODE_EXTRA_CA_CERTS="/home/ubuntu/.mitmproxy/mitmproxy-ca-cert.pem"
+export NODE_EXTRA_CA_CERTS="/etc/mitmproxy/certs/mitmproxy-ca-cert.pem"
 
 exec gosu ubuntu "$@"
