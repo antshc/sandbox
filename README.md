@@ -34,10 +34,10 @@ docker compose -f docker-compose.yml -f docker-compose.hub.yml run --rm sandbox 
 
 ### Distribute to end users
 
-Give users the `starter/` folder. It contains only what's needed to pull and run without building:
+Give users the `runtime/` folder. It contains only what's needed to pull and run without building:
 
 ```bash
-cd starter
+cd runtime
 export COPILOT_GITHUB_TOKEN=<token>
 docker compose run --rm sandbox cop "explain this codebase"
 ```
@@ -167,7 +167,7 @@ See [SECURITY.md](SECURITY.md).
 
 ## Firewall rules
 
-Default rules are baked into the image (`runtime/firewall/rules/`). Every `.py` file in that directory is active — delete a file and rebuild to disable it. Hosts allowed by default:
+Default rules are baked into the image (`publish/firewall/rules/`). Every `.py` file in that directory is active — delete a file and rebuild to disable it. Hosts allowed by default:
 
 | File | Allowed hosts |
 |------|---------------|
@@ -185,11 +185,11 @@ volumes:
   - ./my-rules:/etc/mitmproxy/user-rules:ro
 ```
 
-See `starter/my-rules/example.py` for the full convention and an annotated template.
+See `runtime/my-rules/example.py` for the full convention and an annotated template.
 
 ### Adding built-in rules (requires rebuild)
 
-Create a new file in `runtime/firewall/rules/` and rebuild the image.
+Create a new file in `publish/firewall/rules/` and rebuild the image.
 
 #### 1. Create a new rule file
 

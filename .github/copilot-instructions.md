@@ -6,15 +6,15 @@ Sandboxed container for Copilot agent. All outbound HTTP/HTTPS routed through mi
 
 ## Structure
 
-- `runtime/Dockerfile` — Ubuntu 24.04, .NET 8, Node 22, mitmproxy, gh CLI
-- `runtime/entrypoint.sh` — root entrypoint: starts mitmproxy (as root), sets iptables rules, drops to `ubuntu` via gosu
-- `runtime/cop.sh` — Copilot CLI wrapper script
+- `publish/Dockerfile` — Ubuntu 24.04, .NET 8, Node 22, mitmproxy, gh CLI
+- `publish/entrypoint.sh` — root entrypoint: starts mitmproxy (as root), sets iptables rules, drops to `ubuntu` via gosu
+- `publish/cop.sh` — Copilot CLI wrapper script
 - `firewall/firewall.py` — mitmproxy addon, loads rules from `firewall/rules/`
 - `firewall/rules/` — per-service allowlists (hosts + optional `check_request`)
-- `docker-compose.yml` — build & run config (builds image locally from `runtime/`)
+- `docker-compose.yml` — build & run config (builds image locally from `publish/`)
 - `docker-compose.hub.yml` — override to use pre-built Docker Hub image instead of building
 - `workspace/` — example .NET app (mounted at `/home/ubuntu/workspace`)
-- `starter/` — minimal distributable folder: users copy this to their machine to get started without building. Contains `docker-compose.yml` (hub image), `firewall/`, and `logs/`.
+- `runtime/` — minimal distributable folder: users copy this to their machine to get started without building. Contains `docker-compose.yml` (hub image), `firewall/`, and `logs/`.
 
 ## Build
 
@@ -44,10 +44,10 @@ docker compose -f docker-compose.yml -f docker-compose.hub.yml run --rm sandbox 
 
 ### Distribute to end users
 
-Give users the `starter/` folder. It contains only what's needed to pull and run without building:
+Give users the `runtime/` folder. It contains only what's needed to pull and run without building:
 
 ```bash
-cd starter
+cd runtime
 export COPILOT_GITHUB_TOKEN=<token>
 docker compose run --rm sandbox cop "hello world"
 ```
