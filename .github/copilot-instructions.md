@@ -7,7 +7,7 @@ Sandboxed container for Copilot agent. All outbound HTTP/HTTPS routed through mi
 ## Structure
 
 - `Dockerfile` — Ubuntu 24.04, .NET 8, Node 22, mitmproxy, gh CLI
-- `entrypoint.sh` — starts mitmproxy, sets proxy env vars, execs CMD
+- `entrypoint.sh` — root entrypoint: starts mitmproxy as `_mitmproxy`, sets iptables rules, drops to `ubuntu` via gosu
 - `config/firewall.py` — mitmproxy addon, loads rules from `config/rules/`
 - `config/rules/` — per-service allowlists (hosts + optional `check_request`)
 - `docker-compose.yml` — build & run config
@@ -39,7 +39,11 @@ Review `SECURITY.md` before making changes. Do not introduce:
 ## Key Conventions
 
 - Container user: `ubuntu` (UID 1000), no sudo
+- Entrypoint runs as root only for iptables + gosu, then drops to `ubuntu`
+- mitmproxy runs as `_mitmproxy` user (exempt from iptables redirect)
 - mitmproxy CA trusted at build time (no runtime privilege escalation)
+- iptables NAT REDIRECT forces all HTTP/HTTPS from UID 1000 through proxy
+- `cap_drop: ALL` + `cap_add: NET_ADMIN` in docker-compose
 - Firewall rules: add file in `config/rules/`, register in `config/rules/__init__.py`
 - Workspace bind-mounted at `/home/ubuntu/workspace`
 - Logs volume at `/var/log/mitmproxy`
