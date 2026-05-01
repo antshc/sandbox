@@ -3,6 +3,7 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
+    network_mode: host
     cap_add:
       - NET_ADMIN
       - SETUID
@@ -18,5 +19,6 @@ services:
       # Mount a folder of CA certificates (.crt/.pem) to trust private registries:
       # - ./certs:/etc/sandbox/certs:ro
       - ./workspace:/home/ubuntu/workspace
+      # - ./my-rules:/etc/mitmproxy/user-rules:ro
       # Optional: mount a setup script to run at startup (as ubuntu, after proxy is ready)
       # - ./setup.sh:/etc/sandbox/setup.sh:ro
