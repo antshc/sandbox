@@ -12,10 +12,6 @@ OUTPUT_FORMAT="${COPILOT_OUTPUT_FORMAT:-text}" # FORMAT can be `text` (default) 
 LOG_LEVEL="${COPILOT_LOG_LEVEL:-info}" # choices: none, error, warning, info, debug, all, default
 LOG_DIR="${COPILOT_LOG_DIR:-/var/log/copilot}"
 
-# Hardcoded flags - always enabled
-ALLOW_ALL_TOOLS=true
-NO_ASK_USER=true
-
 # Restrict file access to workspace directory only
 WORKSPACE_DIR="/home/ubuntu/workspace"
 
