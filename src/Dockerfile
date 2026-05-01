@@ -52,7 +52,12 @@ RUN chmod +x /etc/mitmproxy/entrypoint.sh \
     && ln -s /usr/local/bin/cop.sh /usr/local/bin/copiloty \
     && mkdir -p /home/ubuntu/workspace /var/log/mitmproxy /etc/mitmproxy/config /etc/mitmproxy/user-rules \
     && chmod -R a+rx /etc/mitmproxy \
-    && chown -R ubuntu:ubuntu /home/ubuntu
+    && chown -R root:root /home/ubuntu \
+    && mkdir -p /home/ubuntu/workspace /home/ubuntu/.copilot \
+    && chown ubuntu:ubuntu /home/ubuntu/workspace /home/ubuntu/.copilot \
+    && chmod 755 /home/ubuntu/workspace /home/ubuntu/.copilot \
+    && chown root:root /home/ubuntu/.mitmproxy \
+    && chmod 750 /home/ubuntu/.mitmproxy
 
 ENV HTTP_PROXY=http://127.0.0.1:8080
 ENV HTTPS_PROXY=http://127.0.0.1:8080
