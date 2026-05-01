@@ -23,7 +23,7 @@ docker compose run --rm sandbox dotnet run
 ### Test Copilot connectivity
 
 ```bash
-docker compose run --rm sandbox gh copilot suggest "hello world"
+docker compose run --rm sandbox copilot -p "hello world"
 ```
 
 Requires `COPILOT_GITHUB_TOKEN` env var set on the host (loaded via docker-compose).
