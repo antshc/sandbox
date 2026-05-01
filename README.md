@@ -54,7 +54,6 @@ docker compose run --rm sandbox cop "explain this codebase"
 docker run --rm \
   --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
   -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/firewall:/etc/mitmproxy/config:ro" \
   -v "$(pwd)/logs/mitmproxy:/var/log/mitmproxy" \
   -v "$(pwd)/logs/copilot:/var/log/copilot" \
   -v "$(pwd)/workspace:/home/ubuntu/workspace" \
@@ -64,7 +63,6 @@ docker run --rm \
 docker run --rm \
   --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
   -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/firewall:/etc/mitmproxy/config:ro" \
   -v "$(pwd)/logs/mitmproxy:/var/log/mitmproxy" \
   -v "$(pwd)/logs/copilot:/var/log/copilot" \
   -v "$(pwd)/workspace:/home/ubuntu/workspace" \
@@ -99,10 +97,11 @@ COPILOT_MODEL=claude-sonnet-4.6 \
 
 | Host path | Container path | Purpose |
 |-----------|---------------|---------|
-| `./firewall` | `/etc/mitmproxy/config` (read-only) | Firewall rules |
 | `./logs/mitmproxy` | `/var/log/mitmproxy` | Mitmproxy logs (timestamped) |
 | `./logs/copilot` | `/var/log/copilot` | Copilot CLI logs |
 | `./workspace` | `/home/ubuntu/workspace` | Project workspace |
+| `./my-rules` *(optional)* | `/etc/mitmproxy/user-rules` (read-only) | Extra firewall rules (extend defaults) |
+| `./certs` *(optional)* | `/etc/sandbox/certs` (read-only) | CA certificates (see below) |
 | `./setup.sh` *(optional)* | `/etc/sandbox/setup.sh` (read-only) | Startup script (see below) |
 
 ## Startup script (optional)
@@ -123,7 +122,7 @@ You can mount an optional shell script at `/etc/sandbox/setup.sh` to run custom 
 | `GH_TOKEN` | GitHub token for gh CLI (same value) |
 | `HTTP_PROXY` | `http://127.0.0.1:8080` |
 | `HTTPS_PROXY` | `http://127.0.0.1:8080` |
-| `NODE_EXTRA_CA_CERTS` | Path to mitmproxy CA cert (trusted by Node.js) |
+| `NODE_EXTRA_CA_CERTS` | Path to CA bundle trusted by Node.js (mitmproxy cert + any user certs) |
 
 ### Enabling the setup script
 
@@ -142,6 +141,22 @@ docker compose run --rm sandbox
 
 An example [`setup.sh`](setup.sh) is included in this repo showing how to install gh CLI extensions and npm packages.
 
+## CA certificates (optional)
+
+To trust a private registry or internal CA (e.g. a corporate NuGet feed, private npm registry, or self-signed HTTPS endpoint), mount a directory of `.crt` or `.pem` files:
+
+```yaml
+# docker-compose.yml
+volumes:
+  - ./certs:/etc/sandbox/certs:ro
+```
+
+At startup (as root, before the proxy starts) each certificate is:
+- Installed into the system CA store via `update-ca-certificates` — trusted by dotnet, git, curl, gh CLI
+- Appended to the Node CA bundle — trusted by node, npm, and the Copilot CLI
+
+No image rebuild is needed. The mitmproxy CA cert is always included in the bundle.
+
 ## Agent user
 
 The container starts as root to apply iptables network rules, then drops to user `ubuntu` (UID 1000) via `gosu`. mitmproxy runs as a dedicated `_mitmproxy` user. No sudo access is granted to `ubuntu`.
@@ -150,11 +165,33 @@ The container starts as root to apply iptables network rules, then drops to user
 
 See [SECURITY.md](SECURITY.md).
 
-## Adding firewall rules
+## Firewall rules
 
-Rules live in `firewall/rules/`. Each file defines an `ENVIRONMENT` dict with allowed hosts and optionally a `check_request(flow)` function for custom validation.
+Default rules are baked into the image (`runtime/firewall/rules/`). Every `.py` file in that directory is active — delete a file and rebuild to disable it. Hosts allowed by default:
 
-### 1. Create a new rule file
+| File | Allowed hosts |
+|------|---------------|
+| `copilot.py` | `api.githubcopilot.com`, `api.business.githubcopilot.com`, `copilot-proxy.githubusercontent.com`, `telemetry.business.githubcopilot.com`, `default.exp-tas.com`, `api.github.com` |
+| `github.py` | `github.com`, `api.github.com`, `objects.githubusercontent.com`, `raw.githubusercontent.com` |
+| `npm.py` | `registry.npmjs.org` |
+| `nuget.py` | `api.nuget.org`, `www.nuget.org` |
+
+### Adding rules without rebuilding
+
+Mount a directory of `.py` files at `/etc/mitmproxy/user-rules` — they are loaded on top of the defaults:
+
+```yaml
+volumes:
+  - ./my-rules:/etc/mitmproxy/user-rules:ro
+```
+
+See `starter/my-rules/example.py` for the full convention and an annotated template.
+
+### Adding built-in rules (requires rebuild)
+
+Create a new file in `runtime/firewall/rules/` and rebuild the image.
+
+#### 1. Create a new rule file
 
 ```python
 # firewall/rules/myservice.py
@@ -175,7 +212,7 @@ def check_request(flow: http.HTTPFlow) -> None:
         )
 ```
 
-### 2. Adding URL path restrictions
+#### 2. Adding URL path restrictions
 
 Use `check_request(flow)` to enforce fine-grained path-based rules. The function receives the full `mitmproxy.http.HTTPFlow` object — inspect `flow.request.path`, `flow.request.method`, headers, etc.
 
@@ -245,23 +282,10 @@ def check_request(flow: http.HTTPFlow) -> None:
         flow.response = http.Response.make(403, b"Blocked resource group", {"Content-Type": "text/plain"})
 ```
 
-### 3. Register it in `firewall/rules/__init__.py`
-
-```python
-from .myservice import ENVIRONMENT as MYSERVICE
-
-ENVIRONMENTS = {
-    # ... existing entries ...
-    "myservice": MYSERVICE,
-}
-```
-
-### 4. Enable it
-
-All registered environments are active by default. To enable only specific ones, set `FIREWALL_ENVS`:
+#### 3. Rebuild
 
 ```bash
-FIREWALL_ENVS=copilot,github,myservice docker compose run --rm sandbox cop "..."
+docker compose build
 ```
 
 

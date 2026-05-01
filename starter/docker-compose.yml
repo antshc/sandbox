@@ -14,6 +14,8 @@ services:
       - ./logs/mitmproxy:/var/log/mitmproxy
       - ./logs/copilot:/var/log/copilot
       - ./my-rules:/etc/mitmproxy/user-rules:ro
+      # Mount a folder of CA certificates (.crt/.pem) to trust private registries:
+      # - ./certs:/etc/sandbox/certs:ro
       # Mount your project workspace:
       # - /path/to/your/project:/home/ubuntu/workspace
       # Optional: run custom setup steps at startup (as ubuntu, after proxy is ready):

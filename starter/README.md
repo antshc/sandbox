@@ -33,7 +33,6 @@ docker compose run --rm sandbox cop "explain this codebase"
 docker run --rm \
   --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
   -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/firewall:/etc/mitmproxy/config:ro" \
   -v "$(pwd)/logs/mitmproxy:/var/log/mitmproxy" \
   -v "$(pwd)/logs/copilot:/var/log/copilot" \
   -v "/absolute/path/to/your/project:/home/ubuntu/workspace" \
@@ -59,7 +58,6 @@ All Copilot CLI flags are configurable via environment variables — set them in
 | `COPILOT_NO_ASK_USER` | `true` | Pass `--no-ask-user` to the CLI |
 | `COPILOT_LOG_LEVEL` | `info` | Log verbosity: `none`, `error`, `warning`, `info`, `debug`, `all` |
 | `SANDBOX_TAG` | `latest` | Docker Hub image tag to pull |
-| `FIREWALL_ENVS` | `copilot,github,nuget,npm` | Comma-separated network allowlists to enable |
 
 ```bash
 # Use a more powerful model with high effort
@@ -88,16 +86,29 @@ The script runs as the `ubuntu` user after the proxy is ready, before your comma
 
 Available env vars in the script: `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `HTTP_PROXY`, `HTTPS_PROXY`, `NODE_EXTRA_CA_CERTS`.
 
+## CA certificates (optional)
+
+To trust a private registry or internal CA, place `.crt` or `.pem` files in a `certs/` folder and uncomment the volume in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./certs:/etc/sandbox/certs:ro
+```
+
+At startup each certificate is installed into the system CA store (dotnet, git, curl, gh CLI) and appended to the Node CA bundle (node, npm, Copilot CLI).
+
 ## Extending the firewall
 
-Add a new rule file under `firewall/rules/` and register it in `firewall/rules/__init__.py`:
+Default rules are baked into the image. Allowed hosts by default:
 
-```python
-# firewall/rules/myservice.py
-ENVIRONMENT = {
-    "hosts": {"api.myservice.com"},
-}
-```
+| Rule | Hosts |
+|------|-------|
+| copilot | `api.githubcopilot.com`, `api.business.githubcopilot.com`, `copilot-proxy.githubusercontent.com`, `telemetry.business.githubcopilot.com`, `default.exp-tas.com`, `api.github.com` |
+| github | `github.com`, `api.github.com`, `objects.githubusercontent.com`, `raw.githubusercontent.com` |
+| npm | `registry.npmjs.org` |
+| nuget | `api.nuget.org`, `www.nuget.org` |
+
+To allow additional hosts, add `.py` rule files to `my-rules/` — they extend the defaults without replacing them. See `my-rules/example.py` for the full convention.
 
 ```python
 # firewall/rules/__init__.py

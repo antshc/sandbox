@@ -15,6 +15,8 @@ services:
     volumes:
       - ./logs/mitmproxy:/var/log/mitmproxy
       - ./logs/copilot:/var/log/copilot
+      # Mount a folder of CA certificates (.crt/.pem) to trust private registries:
+      # - ./certs:/etc/sandbox/certs:ro
       - ./workspace:/home/ubuntu/workspace
       # Optional: mount a setup script to run at startup (as ubuntu, after proxy is ready)
       # - ./setup.sh:/etc/sandbox/setup.sh:ro

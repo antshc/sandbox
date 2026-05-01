@@ -20,6 +20,26 @@ if [ -z "${COPILOT_GITHUB_TOKEN:-}" ]; then
   exit 1
 fi
 
+# --- Register user-supplied CA certificates (runs as root before proxy starts) ---
+USER_CERTS_DIR=/etc/sandbox/certs
+NODE_CA_BUNDLE=/tmp/node-ca-bundle.pem
+
+# Always start the bundle with the mitmproxy CA (required for proxied HTTPS)
+cat /etc/mitmproxy/certs/mitmproxy-ca-cert.pem > "$NODE_CA_BUNDLE"
+
+if [ -d "$USER_CERTS_DIR" ]; then
+  for cert in "$USER_CERTS_DIR"/*.crt "$USER_CERTS_DIR"/*.pem; do
+    [ -f "$cert" ] || continue
+    fname=$(basename "$cert")
+    # Install into system store (covers dotnet, git, curl, gh CLI)
+    cp "$cert" "/usr/local/share/ca-certificates/${fname%.*}.crt"
+    # Append to Node bundle (Node does not use the system store)
+    cat "$cert" >> "$NODE_CA_BUNDLE"
+    echo "Registered CA certificate: $fname"
+  done
+  update-ca-certificates --fresh > /dev/null 2>&1
+fi
+
 # --- Start mitmproxy as root (exempt from iptables UID 1000 rules) ---
 mitmdump \
   --listen-host 127.0.0.1 \
@@ -53,7 +73,7 @@ export HTTP_PROXY=http://127.0.0.1:$PROXY_PORT
 export HTTPS_PROXY=http://127.0.0.1:$PROXY_PORT
 export ALL_PROXY=http://127.0.0.1:$PROXY_PORT
 export NO_PROXY=localhost,127.0.0.1
-export NODE_EXTRA_CA_CERTS="/etc/mitmproxy/certs/mitmproxy-ca-cert.pem"
+export NODE_EXTRA_CA_CERTS="$NODE_CA_BUNDLE"
 export GH_TOKEN="${GH_TOKEN:-${COPILOT_GITHUB_TOKEN}}"
 
 # --- Optional setup script ---
