@@ -28,13 +28,19 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && rm -rf /var/lib/apt/lists/*
 
 
+# Pre-generate mitmproxy CA and trust it system-wide (as root, at build time)
+RUN HOME=/tmp/mitmproxy-setup mitmdump --version \
+    && mkdir -p /home/ubuntu/.mitmproxy \
+    && HOME=/home/ubuntu mitmdump -q &>/dev/null & sleep 2 && kill $! 2>/dev/null || true \
+    && cp /home/ubuntu/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt \
+    && update-ca-certificates
+
 # Copy entrypoint and set up workspace/mitmproxy directories with correct ownership
 COPY entrypoint.sh /etc/mitmproxy/entrypoint.sh
 RUN chmod +x /etc/mitmproxy/entrypoint.sh \
     && mkdir -p /home/ubuntu/workspace /var/log/mitmproxy /etc/mitmproxy/config \
     && chmod -R a+rx /etc/mitmproxy \
-    && chown -R ubuntu:ubuntu /home/ubuntu /etc/mitmproxy /var/log/mitmproxy \
-       /usr/local/share/ca-certificates /etc/ssl/certs
+    && chown -R ubuntu:ubuntu /home/ubuntu /etc/mitmproxy /var/log/mitmproxy
 
 ENV HTTP_PROXY=http://127.0.0.1:8080
 ENV HTTPS_PROXY=http://127.0.0.1:8080
