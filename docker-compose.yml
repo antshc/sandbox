@@ -9,9 +9,11 @@ services:
       - ALL
     environment:
       - COPILOT_GITHUB_TOKEN=${COPILOT_GITHUB_TOKEN}
+      - COPILOT_MODEL=${COPILOT_MODEL:-claude-haiku-4.5}
     volumes:
       - ./config:/etc/mitmproxy/config:ro
-      - ./logs:/var/log/mitmproxy
+      - ./logs/mitmproxy:/var/log/mitmproxy
+      - ./logs/copilot:/var/log/copilot
       - ./hello:/home/ubuntu/workspace
       # Optional: mount a setup script to run at startup (as ubuntu, after proxy is ready)
       # - ./setup.sh:/etc/sandbox/setup.sh:ro

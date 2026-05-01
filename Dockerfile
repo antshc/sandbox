@@ -41,9 +41,11 @@ RUN HOME=/tmp/mitmproxy-setup mitmdump --version \
     && chmod 644 /etc/mitmproxy/certs/mitmproxy-ca-cert.pem \
     && chmod 600 /etc/mitmproxy/certs/mitmproxy-ca.pem
 
-# Copy entrypoint and set up workspace/mitmproxy directories with correct ownership
+# Copy entrypoint, cop wrapper, and set up workspace/mitmproxy directories with correct ownership
 COPY entrypoint.sh /etc/mitmproxy/entrypoint.sh
+COPY cop /usr/local/bin/cop
 RUN chmod +x /etc/mitmproxy/entrypoint.sh \
+    && chmod +x /usr/local/bin/cop \
     && mkdir -p /home/ubuntu/workspace /var/log/mitmproxy /etc/mitmproxy/config \
     && chmod -R a+rx /etc/mitmproxy \
     && chown -R ubuntu:ubuntu /home/ubuntu
@@ -57,4 +59,4 @@ ENV NO_PROXY=localhost,127.0.0.1
 WORKDIR /home/ubuntu/workspace
 
 ENTRYPOINT ["/etc/mitmproxy/entrypoint.sh"]
-CMD ["/bin/bash"]
+CMD ["cop"]
