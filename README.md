@@ -16,28 +16,30 @@ A sandboxed container environment for the Copilot agent. All outbound traffic is
 ## Build
 
 ```bash
-docker build -t sandbox .
+docker compose build
 ```
 
 ## Run
 
 ```bash
-docker run --rm -it \
-  -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/config:/etc/mitmproxy:ro" \
-  -v "$(pwd)/logs:/var/log/mitmproxy" \
-  -v "$(pwd)/logs/copilot:/var/log/copilot" \
-  -v "$(pwd)/hello:/home/ubuntu/workspace" \ inside the container with the mitmproxy firewall active.
+export COPILOT_GITHUB_TOKEN=<your-github-token>
+docker compose run --rm sandbox cop "hello world"
+```
 
-### Run a specific command
+### Use the pre-built Hub image (skip build)
 
 ```bash
-docker run --rm \
-  -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/config:/etc/mitmproxy:ro" \
-  -v "$(pwd)/logs:/var/log/mitmproxy" \
-  -v "$(pwd)/logs/copilot:/var/log/copilot" \
-  -v "$(pwd)/hello:/home/ubuntu/workspace" \
+docker compose -f docker-compose.yml -f docker-compose.hub.yml run --rm sandbox cop "hello world"
+```
+
+### Distribute to end users
+
+Give users the `starter/` folder. It contains only what's needed to pull and run without building:
+
+```bash
+cd starter
+export COPILOT_GITHUB_TOKEN=<token>
+docker compose run --rm sandbox cop "explain this codebase"
 ```
 
 ## Running prompts with `cop`
@@ -45,18 +47,28 @@ docker run --rm \
 The default container command is `cop`, a wrapper around the Copilot CLI. Pass a prompt as arguments:
 
 ```bash
-# Using docker compose
+# docker compose
 docker compose run --rm sandbox cop "explain this codebase"
 
-# Using docker run
+# docker run (built locally)
 docker run --rm \
-  -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/config:/etc/mitmproxy/config:ro" \
-  -v "$(pwd)/logs:/var/log/mitmproxy" \
-  -v "$(pwd)/logs/copilot:/var/log/copilot" \
-  -v "$(pwd)/hello:/home/ubuntu/workspace" \
   --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
-  sandbox cop "refactor this function to be async"
+  -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
+  -v "$(pwd)/firewall:/etc/mitmproxy/config:ro" \
+  -v "$(pwd)/logs/mitmproxy:/var/log/mitmproxy" \
+  -v "$(pwd)/logs/copilot:/var/log/copilot" \
+  -v "$(pwd)/workspace:/home/ubuntu/workspace" \
+  sandbox cop "explain this codebase"
+
+# docker run (Hub image)
+docker run --rm \
+  --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
+  -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
+  -v "$(pwd)/firewall:/etc/mitmproxy/config:ro" \
+  -v "$(pwd)/logs/mitmproxy:/var/log/mitmproxy" \
+  -v "$(pwd)/logs/copilot:/var/log/copilot" \
+  -v "$(pwd)/workspace:/home/ubuntu/workspace" \
+  khdevnet/sandbox cop "explain this codebase"
 ```
 
 ### Overriding defaults
@@ -65,9 +77,9 @@ All Copilot CLI flags are configurable via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COPILOT_MODEL` | `claude-sonnet-4.6` | Model to use (`claude-sonnet-4.6`, `claude-opus-4`, `claude-haiku-4`) |
+| `COPILOT_MODEL` | `claude-haiku-4.5` | Model to use (`claude-haiku-4.5`, `claude-sonnet-4.6`, `claude-opus-4`) |
 | `COPILOT_EFFORT` | *(unset)* | Effort level (`low`, `medium`, `high`). Omitted when unset — not supported by all models (e.g. haiku). |
-| `COPILOT_OUTPUT_FORMAT` | `json` | Output format (`json`, `text`, `stream-json`) |
+| `COPILOT_OUTPUT_FORMAT` | `text` | Output format (`text`, `json`, `stream-json`) |
 | `COPILOT_ALLOW_ALL_TOOLS` | `true` | Pass `--allow-all-tools` when `true` |
 | `COPILOT_NO_ASK_USER` | `true` | Pass `--no-ask-user` when `true` |
 | `COPILOT_LOG_LEVEL` | `debug` | Log verbosity |
@@ -78,9 +90,9 @@ All Copilot CLI flags are configurable via environment variables:
 COPILOT_MODEL=claude-opus-4 COPILOT_EFFORT=high \
   docker compose run --rm sandbox cop "deep analysis of the auth module"
 
-# Use haiku for fast, lightweight tasks
-COPILOT_MODEL=claude-haiku-4 \
-  docker compose run --rm sandbox cop "summarize this file"
+# Use sonnet for a balance of quality and speed
+COPILOT_MODEL=claude-sonnet-4.6 \
+  docker compose run --rm sandbox cop "refactor this module"
 ```
 
 ## Volume mounts
@@ -122,27 +134,13 @@ volumes:
   - ./setup.sh:/etc/sandbox/setup.sh:ro
 ```
 
-Or pass it directly to `docker run`:
+Or pass it directly with `docker compose run` by adding the volume to `docker-compose.yml` and running:
 
 ```bash
-docker run --rm \
-  -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/setup.sh:/etc/sandbox/setup.sh:ro" \
-  sandbox
+docker compose run --rm sandbox
 ```
 
 An example [`setup.sh`](setup.sh) is included in this repo showing how to install gh CLI extensions and npm packages.
-
-## Environment setup
-
-The entrypoint requires `COPILOT_GITHUB_TOKEN` to be set. Pass it at runtime:
-
-```bash
-docker run --rm -it -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
-  -v "$(pwd)/config:/etc/mitmproxy:ro" \
-  -v "$(pwd)/logs:/var/log/mitmproxy" \
-  sandbox
-```
 
 ## Agent user
 
@@ -258,14 +256,12 @@ ENVIRONMENTS = {
 }
 ```
 
-### 3. Enable it
+### 4. Enable it
 
 All registered environments are active by default. To enable only specific ones, set `FIREWALL_ENVS`:
 
 ```bash
-docker run --rm -e FIREWALL_ENVS=copilot,github,myservice \
-  -v "$(pwd)/firewall:/etc/mitmproxy/config:ro" \
-  sandbox
+FIREWALL_ENVS=copilot,github,myservice docker compose run --rm sandbox cop "..."
 ```
 
 

@@ -1,0 +1,20 @@
+services:
+  sandbox:
+    image: khdevnet/sandbox:${SANDBOX_TAG:-latest}
+    cap_add:
+      - NET_ADMIN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
+    environment:
+      - COPILOT_GITHUB_TOKEN=${COPILOT_GITHUB_TOKEN}
+      - COPILOT_MODEL=${COPILOT_MODEL:-claude-haiku-4.5}
+    volumes:
+      - ./firewall:/etc/mitmproxy/config:ro
+      - ./logs/mitmproxy:/var/log/mitmproxy
+      - ./logs/copilot:/var/log/copilot
+      # Mount your project workspace:
+      # - /path/to/your/project:/home/ubuntu/workspace
+      # Optional: run custom setup steps at startup (as ubuntu, after proxy is ready):
+      # - ./setup.sh:/etc/sandbox/setup.sh:ro

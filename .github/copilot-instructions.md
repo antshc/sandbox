@@ -8,11 +8,13 @@ Sandboxed container for Copilot agent. All outbound HTTP/HTTPS routed through mi
 
 - `runtime/Dockerfile` — Ubuntu 24.04, .NET 8, Node 22, mitmproxy, gh CLI
 - `runtime/entrypoint.sh` — root entrypoint: starts mitmproxy (as root), sets iptables rules, drops to `ubuntu` via gosu
-- `runtime/cop` — Copilot CLI wrapper script
+- `runtime/cop.sh` — Copilot CLI wrapper script
 - `firewall/firewall.py` — mitmproxy addon, loads rules from `firewall/rules/`
 - `firewall/rules/` — per-service allowlists (hosts + optional `check_request`)
-- `docker-compose.yml` — build & run config
+- `docker-compose.yml` — build & run config (builds image locally from `runtime/`)
+- `docker-compose.hub.yml` — override to use pre-built Docker Hub image instead of building
 - `workspace/` — example .NET app (mounted at `/home/ubuntu/workspace`)
+- `starter/` — minimal distributable folder: users copy this to their machine to get started without building. Contains `docker-compose.yml` (hub image), `firewall/`, and `logs/`.
 
 ## Build
 
@@ -29,10 +31,26 @@ docker compose run --rm sandbox dotnet run
 ### Test Copilot connectivity
 
 ```bash
-docker compose run --rm sandbox copilot -p "hello world"
+docker compose run --rm sandbox cop "hello world"
 ```
 
 Requires `COPILOT_GITHUB_TOKEN` env var set on the host (loaded via docker-compose).
+
+### Use pre-built Hub image (skip build)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.hub.yml run --rm sandbox cop "hello world"
+```
+
+### Distribute to end users
+
+Give users the `starter/` folder. It contains only what's needed to pull and run without building:
+
+```bash
+cd starter
+export COPILOT_GITHUB_TOKEN=<token>
+docker compose run --rm sandbox cop "hello world"
+```
 
 ## Security
 
@@ -52,7 +70,7 @@ Review `SECURITY.md` before making changes. Do not introduce:
 - `cap_drop: ALL` + `cap_add: NET_ADMIN, SETUID, SETGID` in docker-compose
 - Firewall rules: add file in `firewall/rules/`, register in `firewall/rules/__init__.py`
 - Workspace bind-mounted at `/home/ubuntu/workspace`
-- Logs volume at `/var/log/mitmproxy`
+- Logs volume at `/var/log/mitmproxy` and `/var/log/copilot`
 
 ## Optional startup script
 
