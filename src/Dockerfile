@@ -4,13 +4,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV DOTNET_NOLOGO=1
 
-# Install system dependencies and .NET SDK via apt
+# Install system dependencies and .NET SDK 8.0.411 via the official dotnet-install script
+# (apt repos for Ubuntu 24.04 only carry 8.0.1xx; exact feature-band versions require the script)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl wget git jq ca-certificates gnupg unzip bash openssh-client \
         python3 python3-pip python3-venv \
-        dotnet-sdk-8.0 \
+        libicu74 libssl3t64 \
         iptables gosu \
+    && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+    && chmod +x /tmp/dotnet-install.sh \
+    && /tmp/dotnet-install.sh --version 8.0.411 --install-dir /usr/share/dotnet \
+    && ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet \
+    && rm /tmp/dotnet-install.sh \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && npm install -g @github/copilot \
@@ -76,6 +82,7 @@ ENV HTTP_PROXY=http://127.0.0.1:8080
 ENV HTTPS_PROXY=http://127.0.0.1:8080
 ENV ALL_PROXY=http://127.0.0.1:8080
 ENV NO_PROXY=localhost,127.0.0.1
+ENV DOTNET_ROOT=/usr/share/dotnet
 
 # Entrypoint runs as root to set iptables, then drops to ubuntu via gosu
 WORKDIR /home/ubuntu/workspace
