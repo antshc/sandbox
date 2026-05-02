@@ -71,7 +71,7 @@ iptables -A OUTPUT -m owner --uid-owner "$UBUNTU_UID" -j DROP
 
 # --- Ensure log directory is writable by ubuntu (covers host-mounted volumes) ---
 mkdir -p /var/log/copilot
-chown ubuntu:ubuntu /var/log/copilot
+chown ubuntu:ubuntu /var/log/copilot 2>/dev/null || chmod a+w /var/log/copilot 2>/dev/null || true
 
 # --- Fix Docker socket permissions (idempotent; no-op when socket is absent) ---
 if [ -S /var/run/docker.sock ]; then
