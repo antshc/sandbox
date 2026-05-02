@@ -69,6 +69,7 @@ copiloty() {
     --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
     --network host \
     -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
+    # -e GH_TOKEN="$GH_TOKEN" \
     -v "/absolute/path/to/runtime/logs/mitmproxy:/var/log/mitmproxy" \
     -v "/absolute/path/to/runtime/logs/copilot:/var/log/copilot" \
     -v "$(pwd):/home/ubuntu/workspace" \
@@ -106,6 +107,7 @@ All Copilot CLI flags are configurable via environment variables — set them in
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COPILOT_GITHUB_TOKEN` | *(required)* | GitHub token for Copilot CLI |
+| `GH_TOKEN` | *(same as `COPILOT_GITHUB_TOKEN`)* | Token for `gh` CLI — set only if you need a separate token |
 | `COPILOT_MODEL` | `claude-sonnet-4.6` | Model: `claude-haiku-4.5`, `claude-sonnet-4.6`, `claude-opus-4` |
 | `COPILOT_EFFORT` | *(unset)* | Effort level: `low`, `medium`, `high`. Omitted when unset — not all models support it. |
 | `COPILOT_OUTPUT_FORMAT` | `text` | Output format: `text`, `json`, `stream-json` |

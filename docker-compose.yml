@@ -13,6 +13,8 @@ services:
     environment:
       - COPILOT_GITHUB_TOKEN=${COPILOT_GITHUB_TOKEN}
       - COPILOT_MODEL=${COPILOT_MODEL:-claude-sonnet-4.6}
+      # Optional: separate token for gh CLI (defaults to COPILOT_GITHUB_TOKEN if unset)
+      # - GH_TOKEN=${GH_TOKEN}
     volumes:
       - ./logs/mitmproxy:/var/log/mitmproxy
       - ./logs/copilot:/var/log/copilot
