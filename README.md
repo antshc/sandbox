@@ -67,7 +67,6 @@ export COPILOT_GITHUB_TOKEN=<your-github-token>
 copiloty() {
   docker run --rm -it \
     --cap-add NET_ADMIN --cap-add SETUID --cap-add SETGID --cap-drop ALL \
-    --network host \
     -e COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN" \
     # -e GH_TOKEN="$GH_TOKEN" \
     -v "/absolute/path/to/runtime/logs/mitmproxy:/var/log/mitmproxy" \
