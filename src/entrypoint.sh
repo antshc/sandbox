@@ -75,10 +75,15 @@ for dir in /var/log/copilot /home/ubuntu/workspace; do
   chown ubuntu:ubuntu "$dir" 2>/dev/null || chmod a+w "$dir" 2>/dev/null || true
 done
 
-# --- Fix Docker socket permissions (idempotent; no-op when socket is absent) ---
+# --- Fix Docker socket access (idempotent; no-op when socket is absent) ---
+# chown is not used here because CAP_CHOWN is dropped and the socket is a host mount.
+# Instead, detect the socket's GID, ensure a matching group exists, and add ubuntu to it.
 if [ -S /var/run/docker.sock ]; then
-  chown root:ubuntu /var/run/docker.sock
-  chmod 660 /var/run/docker.sock
+  DOCKER_SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
+  if ! getent group "$DOCKER_SOCK_GID" > /dev/null 2>&1; then
+    groupadd -g "$DOCKER_SOCK_GID" docker-host
+  fi
+  usermod -aG "$DOCKER_SOCK_GID" ubuntu
 fi
 
 # --- Drop privileges and exec as ubuntu ---
