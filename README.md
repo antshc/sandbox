@@ -170,6 +170,7 @@ Default rules are baked into the image. Allowed hosts by default:
 | github | `github.com`, `api.github.com`, `objects.githubusercontent.com`, `raw.githubusercontent.com` |
 | npm | `registry.npmjs.org` |
 | nuget | `api.nuget.org`, `www.nuget.org` |
+| pki | `ocsp.digicert.com`, `crl3.digicert.com`, `crl4.digicert.com`, `*.digicert.com`, `s.symcb.com`, `ts-crl.ws.symantec.com` |
 
 To allow additional hosts, add `.py` rule files to `my-rules/` — they extend the defaults without replacing them. See `my-rules/example.py` for the full convention.
 

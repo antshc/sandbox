@@ -5,6 +5,7 @@ from mitmproxy import http
 
 
 ALLOWED_HOSTS: set[str] = set()
+ALLOWED_WILDCARDS: list[str] = []  # suffixes like ".digicert.com" from "*.digicert.com"
 HOST_HANDLERS: dict[str, callable] = {}
 
 
@@ -22,6 +23,9 @@ def _load_rules_from_dir(rules_dir: str) -> None:
         env = getattr(module, "ENVIRONMENT", {})
         hosts = env.get("hosts", set())
         ALLOWED_HOSTS.update(hosts)
+        for pattern in env.get("wildcards", set()):
+            if pattern.startswith("*."):
+                ALLOWED_WILDCARDS.append(pattern[1:])  # store as ".digicert.com"
         if hasattr(module, "check_request"):
             for host in hosts:
                 HOST_HANDLERS[host] = module.check_request
@@ -42,7 +46,7 @@ _load_rules_from_dir("/etc/mitmproxy/user-rules")
 def request(flow: http.HTTPFlow) -> None:
     host = flow.request.pretty_host.lower()
 
-    if host not in ALLOWED_HOSTS:
+    if host not in ALLOWED_HOSTS and not any(host.endswith(w) for w in ALLOWED_WILDCARDS):
         body = (
             f"[Sandbox Firewall] Access to '{host}' is blocked.\n"
             f"This is not a rejection from the remote site — the sandbox proxy blocked the request.\n"
